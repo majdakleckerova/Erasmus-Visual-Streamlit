@@ -1,15 +1,19 @@
 # Erasmus-visualization: Streamlit varianta
 Vizualizace možných zájezdů na Erasmus skrze streamlit. Pretty self-explanatory.
 
+# VELMI DŮLEŽITÉ: NAINSTALUJTE SI DO PIPU FOLIUM A STREAMLIT-FOLIUM
+
 ## Co je třeba udělat:
 - Excel tabulku
     - Relevantní data se školama, stáhnutelný z linků na whatsappu
     - Geografické koordinace
 - Python/streamlit script
-    - Zobrazení předchozí tabulky, filtrování určitých sloupců (Matěj)
-    - Mapa se školama (Matěj)
+    - Zobrazení předchozí tabulky
+        - Filtrování sloupců 
+    - Mapa se školama
+        - Zlepšení vizualizace
 - Docker
-    - Udělat správně dockerfile
+    - Udělat správně dockerfile (kterej obsahuje streamlit, polars, folium a streamlit_folium (ano, to je real package))
 
 (Úkoly si beru temporarily)
 
