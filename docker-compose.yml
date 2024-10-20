@@ -1,0 +1,6 @@
+version: '3'
+services:
+  visualizer-app:
+    build: .
+    ports:
+      - "8501:8501"

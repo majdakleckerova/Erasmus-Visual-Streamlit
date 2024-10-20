@@ -2,3 +2,4 @@ streamlit
 polars
 folium
 streamlit_folium
+fastexcel
