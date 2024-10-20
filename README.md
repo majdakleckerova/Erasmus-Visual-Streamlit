@@ -32,4 +32,4 @@ Mac (hádám, mělo by bejt stejný jako Linux):
 source .venv/Scripts/activate
 ```
 
-does this work
+ligma
