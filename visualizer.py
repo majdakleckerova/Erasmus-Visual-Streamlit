@@ -17,7 +17,7 @@ except:
         })
 
 #TODO: Obecně hodně těhle deklarací je sketch. Trochu se na to kouknout a optimalizovat.
-schools:pl.DataFrame = schools_source.select("Univerzita", "Stát", "Katedra") # Schools je subtabulka sloužící k filtrování a jiným sussy operacím. Asi tady deklarována zbytečně vysoko.
+schools:pl.DataFrame = schools_source.select("name", "country", "study") # Schools je subtabulka sloužící k filtrování a jiným sussy operacím. Asi tady deklarována zbytečně vysoko.
 picks = schools.to_dict() # Dictionary s filtrovacími klíčovými slovíčky pro každý sloupeček
 for column in picks.keys():
     picks[column] = ["---"]  + picks[column].unique(maintain_order=True).to_list()
