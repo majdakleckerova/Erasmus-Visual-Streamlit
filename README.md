@@ -12,8 +12,6 @@ Vizualizace možných zájezdů na Erasmus skrze streamlit. Pretty self-explanat
         - Filtrování sloupců 
     - Mapa se školama
         - Zlepšení vizualizace
-- Docker
-    - Udělat správně dockerfile (kterej obsahuje streamlit, polars, folium a streamlit_folium (ano, to je real package))
 
 (Úkoly si beru temporarily)
 
