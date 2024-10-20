@@ -2,7 +2,7 @@
 Vizualizace možných zájezdů na Erasmus skrze streamlit. Pretty self-explanatory.
 
 # ~~VELMI DŮLEŽITÉ: NAINSTALUJTE SI DO PIPU FOLIUM A STREAMLIT-FOLIUM~~
-# Builděte to přes Docker instead: "docker-compose up --build"
+# Builděte to přes Docker: "docker-compose up --build"
 ## Pak ctrl + click na Local URL pro otevření stránky 
 
 ## Co je třeba udělat:

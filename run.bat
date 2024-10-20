@@ -1,3 +1,3 @@
 docker-compose up --build -d
-timeout /t 3 >nul
+timeout /t 2 >nul
 start http://localhost:8501
