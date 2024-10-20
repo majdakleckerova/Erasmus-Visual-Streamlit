@@ -65,14 +65,40 @@ europe = fo.Map(
     max_lon=max_long
 )
 
+# Barvy pro jednotlivé katedry
+category_colors = {
+    "Turecká republika":"purple",
+    "Švédské království":"lightblue",
+    "Španělské království":"lightgreen",
+    "Srbská republika":"purple",
+    "Spolková republika Německo":"pink",
+    "Slovinská republika":"lightgreen",
+    "Slovenská republika":"pink",
+    "Řecká republika":"purple",
+    "Rumunsko":"purple",
+    "Portugalská republika":"lightgreen",
+    "Polská republika":"pink",
+    "Maďarsko":"pink",
+    "Lotyšská republika":"lightblue",
+    "Litevská republika":"lightblue",
+    "Italská republika":"lightgreen",
+    "Chorvatská republika":"lightgreen",
+    "Francouzská republika":"lightgreen",
+    "Estonská republika":"lightblue",
+    "Bulharská republika":"purple"
+}
+
 # Vytvoření Markerů na mapě
 # Extrahování koordinací z dataframeu #TODO: Tohle je extrémně špatný přístup. Holy fuck.
-coords = zip(schools_source.to_series(schools_source.get_column_index("Univerzita")).to_list(),schools_source.to_series(schools_source.get_column_index("Latitude")).to_list(),schools_source.to_series(schools_source.get_column_index("Longtitude")).to_list())
+coords = zip(schools_source.to_series(schools_source.get_column_index("Univerzita")).to_list(),schools_source.to_series(schools_source.get_column_index("Latitude")).to_list(),schools_source.to_series(schools_source.get_column_index("Longtitude")).to_list(),schools_source.to_series(schools_source.get_column_index("Stát")).to_list())
 # Iterace a zapsání do mapy
 for coord in coords:
+    katedra = coord[3]
+    color = category_colors.get(katedra, "blue")
     fo.Marker(
         location=[coord[1], coord[2]],
-        popup=fo.Popup(coord[0])
+        popup=fo.Popup(coord[0]),
+        icon = fo.Icon(color=color, icon="graduation-cap",prefix="fa")
     ).add_to(europe)
 
 # Body ilustrující kam až lze tahat "kameru" (debug only)
