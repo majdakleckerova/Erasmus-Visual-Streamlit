@@ -4,7 +4,7 @@ Vizualizace možných zájezdů na Erasmus skrze streamlit. Pretty self-explanat
 # VELMI DŮLEŽITÉ: NAINSTALUJTE SI DO PIPU FOLIUM A STREAMLIT-FOLIUM
 
 ## Co je třeba udělat:
-- Excel tabulku
+- Excel tabulku                                                         *hotovo*
     - Relevantní data se školama, stáhnutelný z linků na whatsappu
     - Geografické koordinace
 - Python/streamlit script
