@@ -4,20 +4,12 @@ import folium as fo
 from streamlit_folium import st_folium
 from typing import Dict, List
 
-# Debug data
-try:
-    schools_source = pl.read_excel("schools.xlsx") # Schools_source je "nedotknutelná" zdrojová tabulka; kdo se jí pokusí modifikovat, toho zabiju
-except:
-    schools_source = pl.DataFrame({
-        "name":["School 1", "School 2", "School 3", "School 4"],
-        "country":["Spain", "Spain", "Czechia", "Mars"],
-        "study":["Maths", "Chemistry", "Maths", "Biology"],
-        "latitude":[50.5, 47.8, 67.1, 55.555],
-        "longtitude":[14.25, 22.74, 37.8, 44.444]
-        })
+
+schools_source = pl.read_excel("schools.xlsx") # Schools_source je "nedotknutelná" zdrojová tabulka; kdo se jí pokusí modifikovat, toho zabiju
+
 
 #TODO: Obecně hodně těhle deklarací je sketch. Trochu se na to kouknout a optimalizovat.
-schools:pl.DataFrame = schools_source.select("name", "country", "study") # Schools je subtabulka sloužící k filtrování a jiným sussy operacím. Asi tady deklarována zbytečně vysoko.
+schools:pl.DataFrame = schools_source.select("Katedra","Stát","Univerzita" ) # Schools je subtabulka sloužící k filtrování a jiným sussy operacím. Asi tady deklarována zbytečně vysoko.
 picks = schools.to_dict() # Dictionary s filtrovacími klíčovými slovíčky pro každý sloupeček
 for column in picks.keys():
     picks[column] = ["---"]  + picks[column].unique(maintain_order=True).to_list()
@@ -52,7 +44,7 @@ for index, column in enumerate(schools.columns):
         st.session_state[column] = st.multiselect(label=column, options=picks[column]) # Samotné filtry, NOTE: This is kinda stupid?
 
 schools = filter_schools(schools_source)
-schools_sub = schools.select("name", "country", "study")
+schools_sub = schools.select("Katedra","Stát","Univerzita")
 
 st.table(schools_sub)
 
@@ -75,7 +67,7 @@ europe = fo.Map(
 
 # Vytvoření Markerů na mapě
 # Extrahování koordinací z dataframeu #TODO: Tohle je extrémně špatný přístup. Holy fuck.
-coords = zip(schools.to_series(schools.get_column_index("name")).to_list(),schools.to_series(schools.get_column_index("latitude")).to_list(),schools.to_series(schools.get_column_index("longtitude")).to_list())
+coords = zip(schools_source.to_series(schools_source.get_column_index("Univerzita")).to_list(),schools_source.to_series(schools_source.get_column_index("Latitude")).to_list(),schools_source.to_series(schools_source.get_column_index("Longtitude")).to_list())
 # Iterace a zapsání do mapy
 for coord in coords:
     fo.Marker(
