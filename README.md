@@ -32,4 +32,4 @@ Mac (hádám, mělo by bejt stejný jako Linux):
 source .venv/Scripts/activate
 ```
 
-balls
+does this work
