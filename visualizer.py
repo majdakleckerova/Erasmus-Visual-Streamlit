@@ -5,11 +5,11 @@ from streamlit_folium import st_folium
 from typing import Dict, List
 
 
-schools_source = pl.read_excel("schools.xlsx") # Schools_source je "nedotknutelná" zdrojová tabulka; kdo se jí pokusí modifikovat, toho zabiju
-
+schools_source = pl.read_excel("schools.xlsx") # Schools_source je "nedotknutelná" zdrojová tabulka; kdo tu proměnnou pokusí modifikovat, toho zabiju
+filter_targets = ["Katedra", "Stát", "Univerzita"]
 
 #TODO: Obecně hodně těhle deklarací je sketch. Trochu se na to kouknout a optimalizovat.
-schools:pl.DataFrame = schools_source.select("Katedra","Stát","Univerzita" ) # Schools je subtabulka sloužící k filtrování a jiným sussy operacím. Asi tady deklarována zbytečně vysoko.
+schools:pl.DataFrame = schools_source.select(filter_targets) # Schools je subtabulka sloužící k filtrování a jiným sussy operacím. Asi tady deklarována zbytečně vysoko.
 picks = schools.to_dict() # Dictionary s filtrovacími klíčovými slovíčky pro každý sloupeček
 for column in picks.keys():
     picks[column] = ["---"]  + picks[column].unique(maintain_order=True).to_list()
@@ -38,8 +38,8 @@ st.divider()
 # --- TABULKA ---
 
 # Filtrování
-filters = st.columns(len(schools.columns)) # Sloupečky s filtry
-for index, column in enumerate(schools.columns):
+filters = st.columns(len(filter_targets)) # Sloupečky s filtry
+for index, column in enumerate(filter_targets):
     with filters[index]:
         st.session_state[column] = st.multiselect(label=column, options=picks[column]) # Samotné filtry, NOTE: This is kinda stupid?
 
@@ -90,7 +90,7 @@ category_colors = {
 
 # Vytvoření Markerů na mapě
 # Extrahování koordinací z dataframeu #TODO: Tohle je extrémně špatný přístup. Holy fuck.
-coords = zip(schools_source.to_series(schools_source.get_column_index("Univerzita")).to_list(),schools_source.to_series(schools_source.get_column_index("Latitude")).to_list(),schools_source.to_series(schools_source.get_column_index("Longtitude")).to_list(),schools_source.to_series(schools_source.get_column_index("Stát")).to_list())
+coords = zip(schools.to_series(schools.get_column_index("Univerzita")).to_list(),schools.to_series(schools.get_column_index("Latitude")).to_list(),schools.to_series(schools.get_column_index("Longtitude")).to_list(),schools.to_series(schools.get_column_index("Stát")).to_list())
 # Iterace a zapsání do mapy
 for coord in coords:
     katedra = coord[3]
