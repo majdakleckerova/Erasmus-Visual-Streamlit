@@ -46,7 +46,7 @@ for index, column in enumerate(filter_targets):
 schools = filter_schools(schools_source)
 schools_sub = schools.select("Katedra","Stát","Univerzita")
 
-st.table(schools_sub)
+st.dataframe(schools_sub, use_container_width=True)
 
 # --- MAPA --- TODO: Mapa pod tabulkou je hodně špatnej design. Pokud ta tabulka bude moc velká, bude to chtít hodně scrollování před nalezením mapy. Posunout mapu nahoru, nebo aspoň vedle tabulky.
 # WE FOLIUM UP IN THIS HOE
@@ -102,10 +102,10 @@ for coord in coords:
     ).add_to(europe)
 
 # Body ilustrující kam až lze tahat "kameru" (debug only)
-fo.CircleMarker([max_lat, max_long]).add_to(europe)
-fo.CircleMarker([max_lat, min_long]).add_to(europe)
-fo.CircleMarker([min_lat, max_long]).add_to(europe)
-fo.CircleMarker([min_lat, min_long]).add_to(europe)
+# fo.CircleMarker([max_lat, max_long]).add_to(europe)
+# fo.CircleMarker([max_lat, min_long]).add_to(europe)
+# fo.CircleMarker([min_lat, max_long]).add_to(europe)
+# fo.CircleMarker([min_lat, min_long]).add_to(europe)
 
 # Spuštění (thank you based open-source contributors)
 st_folium(europe, use_container_width=True)
