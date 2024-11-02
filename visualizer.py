@@ -44,7 +44,8 @@ for index, column in enumerate(filter_targets):
         st.session_state[column] = st.multiselect(label=column, options=picks[column]) # Samotné filtry, NOTE: This is kinda stupid?
 
 schools = filter_schools(schools_source)
-schools_sub = schools.select("Katedra","Stát","Univerzita")
+schools_sub = schools.select("Katedra","Stát","Univerzita", "URL")
+
 
 st.dataframe(schools_sub, use_container_width=True)
 
@@ -90,15 +91,26 @@ category_colors = {
 
 # Vytvoření Markerů na mapě
 # Extrahování koordinací z dataframeu #TODO: Tohle je extrémně špatný přístup. Holy fuck.
-coords = zip(schools.to_series(schools.get_column_index("Univerzita")).to_list(),schools.to_series(schools.get_column_index("Latitude")).to_list(),schools.to_series(schools.get_column_index("Longtitude")).to_list(),schools.to_series(schools.get_column_index("Stát")).to_list())
+coords = zip(
+    schools.to_series(schools.get_column_index("Univerzita")).to_list(),
+    schools.to_series(schools.get_column_index("Latitude")).to_list(),
+    schools.to_series(schools.get_column_index("Longtitude")).to_list(),
+    schools.to_series(schools.get_column_index("Stát")).to_list(),
+    schools.to_series(schools.get_column_index("URL")).to_list()
+)
+
 # Iterace a zapsání do mapy
 for coord in coords:
-    katedra = coord[3]
-    color = category_colors.get(katedra, "blue")
+    stát = coord[3]
+    color = category_colors.get(stát, "blue")
+    
+    # Vytvoření popisu s názvem univerzity a URL
+    popup_content = f"<strong>{coord[0]}</strong><br><a href='{coord[4]}' target='_blank'>{coord[4]}</a>"
+    
     fo.Marker(
         location=[coord[1], coord[2]],
-        popup=fo.Popup(coord[0]),
-        icon = fo.Icon(color=color, icon="graduation-cap",prefix="fa")
+        popup=fo.Popup(popup_content),
+        icon=fo.Icon(color=color, icon="graduation-cap", prefix="fa")
     ).add_to(europe)
 
 # Body ilustrující kam až lze tahat "kameru" (debug only)
