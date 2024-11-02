@@ -1,37 +1,16 @@
 # Erasmus-visualization: Streamlit varianta
 Vizualizace možných zájezdů na Erasmus skrze streamlit. Pretty self-explanatory.
+Akutální web verze (NEREFLEKTUJE AKTUALIZACE): erasmus-proto.streamlit.app
 
-# ~~VELMI DŮLEŽITÉ: NAINSTALUJTE SI DO PIPU FOLIUM A STREAMLIT-FOLIUM~~
 # Builděte to přes Docker: "docker-compose up --build"
 ## Pak ctrl + click na Local URL pro otevření stránky 
 
 ## Co je třeba udělat:
-- Excel tabulku                                                         *hotovo*
-    - Relevantní data se školama, stáhnutelný z linků na whatsappu
-    - Geografické koordinace
-- Python/streamlit script
-    - Zobrazení předchozí tabulky
-        - Filtrování sloupců 
-    - Mapa se školama
-        - Zlepšení vizualizace
+- Excel tabulku
+    - Předělat katedry na obory
+    - Dodělat zbytek škol z poslaného souboru od Škvora
+- Skript na přidání škol
+- Přístup k dalším souborům and whatnot
+- Přidat zbytek věcí který chyběj
 
-(Úkoly si beru temporarily)
 
-### Also:
-Udělejte si python venv, prosím.
-
-Inicializace:
-```
-{python spouštěč} -m venv .venv
-```
-(Python spouštěč může bejt cokoliv, zjistíte tím že zkusíte spustit ve VSCode nějakej random python scriptík (BEZ STREAMLITU), potom by to mělo bejt v tom příkaze)
-Windows:
-```
-.venv\Scripts\activate
-```
-Mac (hádám, mělo by bejt stejný jako Linux):
-```
-source .venv/Scripts/activate
-```
-
-ligma
