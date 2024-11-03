@@ -4,6 +4,7 @@ import logging as log
 from geopy.geocoders import Nominatim
 from typing import Dict, List
 
+# Nastavení logování NOTE: Log se ukládá do loader_log.txt
 log.basicConfig(
     filename="loader_log.txt",
     encoding="utf-8",
@@ -14,42 +15,57 @@ log.basicConfig(
     level=log.INFO
 )
 
+# Funkce vracící slovník ve formátu {jméno v načítané tabulce:jméno v ukládané tabulce} 
 def getColumnTrans() -> Dict[str, str]:
     return {
-        "Univerzita":"ciziSkolaNazev",
-        "ERASMUS CODE":"ciziSkolaZkratka",
-        "Město":"ciziSkolaMesto",
-        "Stát":"ciziSkolaStatNazev",
-        "Obor":"kodyIscedUvedeneUDomacichPodmSml"
+        "ciziSkolaNazev":"Univerzita",
+        "ciziSkolaZkratka":"ERASMUS CODE",
+        "ciziSkolaMesto":"Město",
+        "ciziSkolaStatNazev":"Stát",
+        "kodyIscedUvedeneUDomacichPodmSml":"Obor"
     }
 
+# Funkce sjednoducíjící jména načítané a ukláadané tabulky
 def unite_cols(new_schools:pl.DataFrame) -> pl.DataFrame:
     column_translator:Dict[str, str] = getColumnTrans()
-    shady_stuff:List[str] = list(column_translator.keys())
-    return new_schools.rename({column_translator[cur_col]:cur_col for cur_col in shady_stuff}).select(shady_stuff)
+    shady_stuff:List[str] = list(column_translator.values())
+    return new_schools.rename({column_translator}).select(shady_stuff)
 
+# Funkce která předělává čísla oborů na jména
 def rename_subs(new_schools:pl.DataFrame) -> pl.DataFrame:
-    code_trans = pl.read_excel("cz_isced_f_systematicka_cast.xlsx")
+    code_trans = pl.read_excel("cz_isced_f_systematicka_cast.xlsx") # Tabulka se jmény oborů
+
+    # Rozepiš obory
     new_schools = new_schools.with_columns(pl.col("Obor").str.split(", ").alias("Obor2")).drop("Obor").rename({"Obor2":"Obor"})
     new_schools_temp = new_schools.explode("Obor").join(code_trans, "Obor", how="left")
 
+    # Přejmenuj obory, slož je zpět podle škol
     obor_rename = new_schools_temp.lazy().group_by("Univerzita").agg(pl.col("Název")).collect().with_columns(pl.col("Název").list.join(", ").alias("Obory")).drop("Název")
-    return new_schools.join(obor_rename, "Univerzita", "left").drop("Obor")
 
+    # Vrať zpět pracovní tabulku s názvy oborů
+    return new_schools.join(obor_rename, "Univerzita", "left").drop("Obor") #Sloupec obor je zbytečný, jsou to jenom ty čísla
+
+# Funkce která přidává url
 def get_url(new_schools:pl.DataFrame, url_source:pl.DataFrame) -> pl.DataFrame:
     return new_schools.join(url_source, "ERASMUS CODE", "left").rename({"Website Url":"URL"})
 
+# Funkce která přidává geografické koordinace (aka zdroj všeho zla)
 def get_coords(new_schools:pl.DataFrame, address_source:pl.DataFrame) -> pl.DataFrame:
-    address_source = address_source.join(new_schools, "ERASMUS CODE", "inner")
+    # Mějme jen kódy škol a adresy
+    address_source = address_source.join(new_schools.select("ERASMUS CODE"), "ERASMUS CODE", "inner")
     address_source.write_excel("addresses.xlsx")
 
+    # Vytvoření clienta geolokátoru
     geolocator = Nominatim(user_agent="matej@sloupovi.info") # I hate everything
 
+    # Získání koordinací
     locations = address_source.to_series(address_source.get_column_index("Address")).to_list()
     unis = address_source.to_series(address_source.get_column_index("ERASMUS CODE")).to_list()
     loc_dicts = {unis[index]:{"street":loc[0], "city":loc[1], "country":loc[2]} for index, loc in enumerate(locations)}
     relocations = [geolocator.geocode(loc_dicts[uni]) for uni in unis]
     #relocations = [loc_dicts[uni] for uni in unis if geolocator.geocode(loc_dicts[uni]) == None]
+
+    # Přidání do tabulky
     lat = pl.Series("Latitude", [str(loc.latitude) if loc != None else None for loc in relocations], dtype=pl.String)
     long = pl.Series("Longtitude", [str(loc.longitude) if loc != None else None for loc in relocations], dtype=pl.String)
     log.info(relocations)
