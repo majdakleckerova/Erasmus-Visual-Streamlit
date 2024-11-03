@@ -6,7 +6,7 @@ from typing import Dict, List
 
 
 schools_source = pl.read_excel("schools.xlsx")
-filter_targets = ["Katedra", "Stát", "Univerzita"] # Mělo by reflektovat všechny potenciální filtrované sloupečky
+filter_targets = ["Obory", "Stát", "Univerzita"] # Mělo by reflektovat všechny potenciální filtrované sloupečky
 
 #TODO: Obecně hodně těhle deklarací je sketch. Trochu se na to kouknout a optimalizovat.
 schools:pl.DataFrame = schools_source.select(filter_targets) # Schools je subtabulka sloužící k filtrování a jiným sussy operacím. Asi tady deklarována zbytečně vysoko.
@@ -44,7 +44,7 @@ for index, column in enumerate(filter_targets):
         st.session_state[column] = st.multiselect(label=column, options=picks[column]) # Samotné filtry, NOTE: This is kinda stupid?
 
 schools = filter_schools(schools_source)
-schools_sub = schools.select("Katedra","Stát","Univerzita", "URL")
+schools_sub = schools.select("Obory","Stát","Univerzita", "URL")
 
 
 st.dataframe(schools_sub, use_container_width=True)
@@ -87,6 +87,8 @@ category_colors = {
     "Estonská republika":"lightblue",
     "Bulharská republika":"purple"
 }
+
+schools = schools.filter([pl.col("Longtitude").is_not_null(), pl.col("Latitude").is_not_null()])
 
 # Vytvoření Markerů na mapě
 # Extrahování koordinací z dataframeu #TODO: Tohle je extrémně špatný přístup. Holy fuck.

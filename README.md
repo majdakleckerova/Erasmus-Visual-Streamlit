@@ -7,10 +7,13 @@ Akutální web verze (NEREFLEKTUJE AKTUALIZACE): erasmus-proto.streamlit.app
 
 ## Co je třeba udělat:
 - Excel tabulku
-    - Předělat katedry na obory
-    - Dodělat zbytek škol z poslaného souboru od Škvora
-- Skript na přidání škol
+    - Předělat katedry na obory                             [DONE]
+    - Dodělat zbytek škol z poslaného souboru od Škvora     [SOMEWHAT DONE]
+    - Spravit generaci koordinací
+        * Některé školy nevracejí koordinace
+        * Prakticky žádná škola nevrací validní koordinace
+- Skript na přidání škol                                    [SOMEWHAT DONE]
 - Přístup k dalším souborům and whatnot
-- Přidat zbytek věcí který chyběj
+- Sepsat sem všechno ostatní co spravit/přidat
 
 

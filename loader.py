@@ -29,7 +29,7 @@ def getColumnTrans() -> Dict[str, str]:
 def unite_cols(new_schools:pl.DataFrame) -> pl.DataFrame:
     column_translator:Dict[str, str] = getColumnTrans()
     shady_stuff:List[str] = list(column_translator.values())
-    return new_schools.rename({column_translator}).select(shady_stuff)
+    return new_schools.rename(column_translator).select(shady_stuff)
 
 # Funkce která předělává čísla oborů na jména
 def rename_subs(new_schools:pl.DataFrame) -> pl.DataFrame:
