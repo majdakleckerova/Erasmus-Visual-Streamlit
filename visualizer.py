@@ -5,12 +5,12 @@ from streamlit_folium import st_folium
 from typing import Dict, List
 
 
-schools_source = pl.read_excel("schools.xlsx") # Schools_source je "nedotknutelná" zdrojová tabulka; kdo tu proměnnou pokusí modifikovat, toho zabiju
-filter_targets = ["Katedra", "Stát", "Univerzita"]
+schools_source = pl.read_excel("schools.xlsx")
+filter_targets = ["Katedra", "Stát", "Univerzita"] # Mělo by reflektovat všechny potenciální filtrované sloupečky
 
 #TODO: Obecně hodně těhle deklarací je sketch. Trochu se na to kouknout a optimalizovat.
 schools:pl.DataFrame = schools_source.select(filter_targets) # Schools je subtabulka sloužící k filtrování a jiným sussy operacím. Asi tady deklarována zbytečně vysoko.
-picks = schools.to_dict() # Dictionary s filtrovacími klíčovými slovíčky pro každý sloupeček
+picks:Dict[str, pl.Series] = schools.to_dict() # Dictionary s filtrovacími klíčovými slovíčky pro každý sloupeček
 for column in picks.keys():
     picks[column] = ["---"]  + picks[column].unique(maintain_order=True).to_list()
 
@@ -38,7 +38,7 @@ st.divider()
 # --- TABULKA ---
 
 # Filtrování
-filters = st.columns(len(filter_targets)) # Sloupečky s filtry
+filters = st.columns(len(filter_targets)) # Názvy filtrovaných sloupců
 for index, column in enumerate(filter_targets):
     with filters[index]:
         st.session_state[column] = st.multiselect(label=column, options=picks[column]) # Samotné filtry, NOTE: This is kinda stupid?
@@ -50,7 +50,6 @@ schools_sub = schools.select("Katedra","Stát","Univerzita", "URL")
 st.dataframe(schools_sub, use_container_width=True)
 
 # --- MAPA --- TODO: Mapa pod tabulkou je hodně špatnej design. Pokud ta tabulka bude moc velká, bude to chtít hodně scrollování před nalezením mapy. Posunout mapu nahoru, nebo aspoň vedle tabulky.
-# WE FOLIUM UP IN THIS HOE
 # Hranice mapy
 max_lat, min_lat = 75, 33
 max_long, min_long = 65, -31
@@ -113,13 +112,7 @@ for coord in coords:
         icon=fo.Icon(color=color, icon="graduation-cap", prefix="fa")
     ).add_to(europe)
 
-# Body ilustrující kam až lze tahat "kameru" (debug only)
-# fo.CircleMarker([max_lat, max_long]).add_to(europe)
-# fo.CircleMarker([max_lat, min_long]).add_to(europe)
-# fo.CircleMarker([min_lat, max_long]).add_to(europe)
-# fo.CircleMarker([min_lat, min_long]).add_to(europe)
-
-# Spuštění (thank you based open-source contributors)
+# Spuštění 
 st_folium(europe, use_container_width=True)
 
 #st.session_state
