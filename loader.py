@@ -62,15 +62,23 @@ def get_coords(new_schools:pl.DataFrame, address_source:pl.DataFrame) -> pl.Data
     locations = address_source.to_series(address_source.get_column_index("Address")).to_list()
     unis = address_source.to_series(address_source.get_column_index("ERASMUS CODE")).to_list()
     loc_dicts = {unis[index]:{"street":loc[0], "city":loc[1], "country":loc[2]} for index, loc in enumerate(locations)}
-    relocations = [geolocator.geocode(loc_dicts[uni]) for uni in unis]
-    #relocations = [loc_dicts[uni] for uni in unis if geolocator.geocode(loc_dicts[uni]) == None]
+    relocations = {uni:geolocator.geocode(loc_dicts[uni]) for uni in unis}
+    df_maker = {"ERASMUS CODE":[], "Longtitude":[],"Latitude":[]}
 
-    # Přidání do tabulky
-    lat = pl.Series("Latitude", [str(loc.latitude) if loc != None else None for loc in relocations], dtype=pl.String)
-    long = pl.Series("Longtitude", [str(loc.longitude) if loc != None else None for loc in relocations], dtype=pl.String)
+    # Přidání koordinací do df
+    for loc in relocations.keys():
+        df_maker["ERASMUS CODE"].append(loc)
+        df_maker["Longtitude"].append(str(relocations[loc].longitude) if relocations[loc] != None else None)
+        df_maker["Latitude"].append(str(relocations[loc].latitude) if relocations[loc] != None else None)
+        reloc_info = f"{relocations[loc]} ({relocations[loc].latitude}, {relocations[loc].longitude})" if relocations[loc] != None else None
+        log.info(f"{loc} - {reloc_info}")
     log.info(relocations)
     #log.info(relocations.count(None))
-    return new_schools.with_columns(lat, long)
+    return new_schools.join(pl.from_dict(df_maker), "ERASMUS CODE", "left")
+
+def geocord_test():
+    geolocator = Nominatim(user_agent="matej@sloupovi.info")
+
    
 
 def main() -> None:
