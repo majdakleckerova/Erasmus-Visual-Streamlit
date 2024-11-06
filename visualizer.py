@@ -114,7 +114,7 @@ for coord in coords:
     ).add_to(europe)
 
 # Spuštění 
-st_folium(europe, use_container_width=True)
+st_folium(europe, use_container_width=False)
 
 #st.session_state
 st.dataframe(schools_sub, use_container_width=True)
