@@ -2,6 +2,7 @@ import polars as pl
 import easygui
 import logging as log
 from geopy.geocoders import Nominatim
+import os.path
 from typing import Dict, List
 
 # Nastavení logování NOTE: Log se ukládá do loader_log.txt
@@ -40,10 +41,11 @@ def rename_subs(new_schools:pl.DataFrame) -> pl.DataFrame:
     new_schools_temp = new_schools.explode("Obor").join(code_trans, "Obor", how="left")
 
     # Přejmenuj obory, slož je zpět podle škol
-    obor_rename = new_schools_temp.lazy().group_by("Univerzita").agg(pl.col("Název")).collect().with_columns(pl.col("Název").list.join(", ").alias("Obory")).drop("Název")
+    #obor_rename = new_schools_temp.lazy().group_by("Univerzita").agg(pl.col("Název")).collect().with_columns(pl.col("Název").list.join(", ").alias("Obory")).drop("Název")
 
     # Vrať zpět pracovní tabulku s názvy oborů
-    return new_schools.join(obor_rename, "Univerzita", "left").drop("Obor") #Sloupec obor je zbytečný, jsou to jenom ty čísla
+    log.info(new_schools_temp.columns)
+    return new_schools_temp.drop("Obor").rename({"Název":"Obory"})#join(obor_rename, "Univerzita", "left").drop("Obor") #Sloupec obor je zbytečný, jsou to jenom ty čísla
 
 # Funkce která přidává url
 def get_url(new_schools:pl.DataFrame, url_source:pl.DataFrame) -> pl.DataFrame:
@@ -51,48 +53,46 @@ def get_url(new_schools:pl.DataFrame, url_source:pl.DataFrame) -> pl.DataFrame:
 
 # Funkce která přidává geografické koordinace (aka zdroj všeho zla)
 def get_coords(new_schools:pl.DataFrame, address_source:pl.DataFrame) -> pl.DataFrame:
+    print("Získávám geokoordinace. Prosím, počkejte chvíli, tohle bude trvat.")
     # Mějme jen kódy škol a adresy
-    address_source = address_source.join(new_schools.select("ERASMUS CODE", "Univerzita"), "ERASMUS CODE", "inner")
-    address_source.write_excel("addresses.xlsx")
+    address_source = address_source.join(new_schools.select("ERASMUS CODE", "Univerzita"), "ERASMUS CODE", "inner").unique("ERASMUS CODE")
+    #address_source.write_excel("addresses.xlsx")
 
     # Vytvoření clienta geolokátoru
-    geolocator = Nominatim(user_agent="matej@sloupovi.info") # I hate everything
+    geolocator = Nominatim(user_agent="matej@sloupovi.info") # NOTE: Tohle používá můj osobní účet. To není uplně ideální (jinak řečeno, this fuckin sucks).
 
     # Získání koordinací
+    # Kolo 1
     names = address_source.to_series(address_source.get_column_index("Univerzita")).to_list()
     unis = address_source.to_series(address_source.get_column_index("ERASMUS CODE")).to_list()
-    
     loc_dicts = {uni:name for uni,name in zip(unis, names)}
     relocations = {uni:geolocator.geocode(loc_dicts[uni]) for uni in unis}
-    df_maker = {"ERASMUS CODE":[], "Longtitude":[],"Latitude":[]}
 
+    # Kolo 2: Spravení (některých) None hodnot
     fixes = [uni for uni in unis if relocations[uni] == None]
-    #address_source = address_source.filter(pl.col("ERASMUS CODE").is_in(fixes))
-    locations = {uni:loc for uni,loc in zip(unis, address_source.to_series(address_source.get_column_index("Address")).to_list())}
+    locations = {uni:loc for uni,loc in zip(unis, address_source.to_series(address_source.get_column_index("Address")).to_list())} #NOTE: This makes me cry
     loc_dicts = {uni:{"street":locations[uni][0], "city":locations[uni][1], "country":locations[uni][2]} for uni in fixes}
     for uni in fixes:
         relocations[uni] = geolocator.geocode(loc_dicts[uni])
 
     # Přidání koordinací do df
+    df_maker = {"ERASMUS CODE":[], "Longtitude":[],"Latitude":[]}
     for loc in relocations.keys():
         df_maker["ERASMUS CODE"].append(loc)
         df_maker["Longtitude"].append(str(relocations[loc].longitude) if relocations[loc] != None else None)
         df_maker["Latitude"].append(str(relocations[loc].latitude) if relocations[loc] != None else None)
         reloc_info = f"{relocations[loc]} ({relocations[loc].latitude}, {relocations[loc].longitude})" if relocations[loc] != None else None
         log.info(f"{loc} - {reloc_info}")
-    log.info(relocations)
-    #log.info(relocations.count(None))
     return new_schools.join(pl.from_dict(df_maker), "ERASMUS CODE", "left")
 
-def geocord_test():
-    geolocator = Nominatim(user_agent="matej@sloupovi.info")
-
-   
-
-def main() -> None:
+def table_overwriter(excel_file) -> int: # Funkce zapíše všechno do souboru a následně vrátí počet řádků s nevalidními koordinacemi
     # Načítání
-    current_schools = pl.read_excel("schools.xlsx")
-    new_schools = pl.read_excel(easygui.fileopenbox("Vyberte soubor s novými školami: ", "Hi", filetypes="*.xlsx"))
+    current_schools = pl.DataFrame()
+    if not os.path.exists("schools.xlsx"):
+        current_schools = pl.from_dict({"ERASMUS CODE":[], "Univerzita":[], "Město":[], "Stát":[], "Longtitude":[], "Latitude":[], "URL":[], "Obory":[]})
+    else:
+        current_schools = pl.read_excel("schools.xlsx")
+    new_schools = pl.read_excel(excel_file)
     addresses = pl.read_excel("url_gen.xlsx").rename({"Erasms Code":"ERASMUS CODE"}).with_columns(pl.concat_list(pl.col("Street"), pl.col("City"), pl.col("Country Cd")).alias("Address")).select("ERASMUS CODE", "Website Url", "Address")
     log.info("Tables read successfully.")
 
@@ -116,11 +116,52 @@ def main() -> None:
     log.info(new_schools.head())
 
     # Mergování a zápis
+    #current_schools = current_schools.drop("Longtitude", "Latitude")
     new_schools = new_schools.select(current_schools.columns)
     current_schools.join(new_schools, "ERASMUS CODE", "anti").vstack(new_schools, in_place=True).write_excel("schools.xlsx")
     log.info("Done!")
 
+    return len(new_schools.filter(pl.col("Longtitude").is_null() | pl.col("Latitude").is_null()))
+
+# ------
+def parseLines(excel_file:any) -> List[str]:
+    log.info("Starting file parsing by ascertaining file input type.")
+    if type(excel_file) != str:
+        try:
+            excel_file = excel_file.name
+        except:
+            log.info("Type determination failed at input type determination. Throwing error.")
+            raise ValueError("File has been inputted via an illegal method.")
+        
+    log.info(excel_file)
+    
+    match excel_file.split(".")[-1]:
+        case "xlsx":
+            log.info("File is an excel file.")
+            buffer = pl.read_excel(excel_file)
+            return buffer.to_series(buffer.get_column_index("ERASMUS CODE")).to_list()
+        case "txt":
+            log.info("File is a text file.")
+            with open(excel_file, "r") as txtfile:
+                return txtfile.read().split('\n')
+        case _:
+            log.info("Uh oh.")
+            raise ValueError("File is of an unreadable format.")
+    
+
+def table_eraser(excel_file) -> int:
+    if not os.path.exists("schools.xlsx"):
+        raise FileNotFoundError("First, make sure to have some schools.")
+    log.info("Starting eraser.")
+    lines:List[str] = parseLines(excel_file)
+    current_schools = pl.read_excel("schools.xlsx")
+    curLen = len(current_schools)
+    current_schools = current_schools.filter(pl.col("ERASMUS CODE").is_in(lines).not_())
+    current_schools.write_excel("schools.xlsx")
+    log.info("Eraser finished correctly.")
+    return curLen - len(current_schools)
     
 
 if __name__ == "__main__":
-    main()
+    table_overwriter(easygui.fileopenbox("Vyberte soubor s novými školami: ", "Hi", filetypes="*.xlsx"))
+    #table_eraser(easygui.fileopenbox("Vybere soubor obsahující školy k vymazání.", filetypes=["*.xlsx", "*.txt"]))
