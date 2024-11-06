@@ -5,7 +5,7 @@ from streamlit_folium import st_folium
 from typing import Dict, List
 
 
-#st.set_page_config(layout="wide")
+st.set_page_config(layout="wide")
 
 schools_source = pl.read_excel("schools.xlsx")
 filter_targets = ["Univerzita", "Obory", "Stát"] # Mělo by reflektovat všechny potenciální filtrované sloupečky
