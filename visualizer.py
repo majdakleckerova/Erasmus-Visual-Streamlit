@@ -5,14 +5,16 @@ from streamlit_folium import st_folium
 from typing import Dict, List
 
 
+#st.set_page_config(layout="wide")
+
 schools_source = pl.read_excel("schools.xlsx")
-filter_targets = ["Obory", "Stát", "Univerzita"] # Mělo by reflektovat všechny potenciální filtrované sloupečky
+filter_targets = ["Univerzita", "Obory", "Stát"] # Mělo by reflektovat všechny potenciální filtrované sloupečky
 
 #TODO: Obecně hodně těhle deklarací je sketch. Trochu se na to kouknout a optimalizovat.
 schools:pl.DataFrame = schools_source.select(filter_targets) # Schools je subtabulka sloužící k filtrování a jiným sussy operacím. Asi tady deklarována zbytečně vysoko.
 picks:Dict[str, pl.Series] = schools.to_dict() # Dictionary s filtrovacími klíčovými slovíčky pro každý sloupeček
 for column in picks.keys():
-    picks[column] = ["---"]  + picks[column].unique(maintain_order=True).to_list()
+    picks[column] = ["---"]  + picks[column].unique().sort(nulls_last=True).to_list()
 
 def filter_schools(school_df:pl.DataFrame) -> pl.DataFrame:
     """Funkce na profiltrování škol dle více podmínek."""
@@ -44,7 +46,7 @@ for index, column in enumerate(filter_targets):
         st.session_state[column] = st.multiselect(label=column, options=picks[column]) # Samotné filtry, NOTE: This is kinda stupid?
 
 schools = filter_schools(schools_source)
-schools_sub = schools.select("Obory","Stát","Univerzita", "URL")
+schools_sub = schools.select("Univerzita", "Obory","Stát","URL")
 
 
 st.dataframe(schools_sub, use_container_width=True)
@@ -88,14 +90,14 @@ category_colors = {
     "Bulharská republika":"purple"
 }
 
-schools = schools.filter([pl.col("Longtitude").is_not_null(), pl.col("Latitude").is_not_null()])
+schools = schools.filter([pl.col("Longitude").is_not_null(), pl.col("Latitude").is_not_null()])
 
 # Vytvoření Markerů na mapě
 # Extrahování koordinací z dataframeu #TODO: Tohle je extrémně špatný přístup. Holy fuck.
 coords = zip(
     schools.to_series(schools.get_column_index("Univerzita")).to_list(),
     schools.to_series(schools.get_column_index("Latitude")).to_list(),
-    schools.to_series(schools.get_column_index("Longtitude")).to_list(),
+    schools.to_series(schools.get_column_index("Longitude")).to_list(),
     schools.to_series(schools.get_column_index("Stát")).to_list(),
     schools.to_series(schools.get_column_index("URL")).to_list()
 )
