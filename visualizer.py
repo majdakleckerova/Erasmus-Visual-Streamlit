@@ -48,9 +48,6 @@ for index, column in enumerate(filter_targets):
 schools = filter_schools(schools_source)
 schools_sub = schools.select("Univerzita", "Obory","Stát","URL")
 
-
-st.dataframe(schools_sub, use_container_width=True)
-
 # --- MAPA --- TODO: Mapa pod tabulkou je hodně špatnej design. Pokud ta tabulka bude moc velká, bude to chtít hodně scrollování před nalezením mapy. Posunout mapu nahoru, nebo aspoň vedle tabulky.
 # Hranice mapy
 max_lat, min_lat = 75, 33
@@ -120,3 +117,4 @@ for coord in coords:
 st_folium(europe, use_container_width=True)
 
 #st.session_state
+st.dataframe(schools_sub, use_container_width=True)
