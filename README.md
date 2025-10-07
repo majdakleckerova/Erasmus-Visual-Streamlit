@@ -1,3 +1,22 @@
+# POUŽITÍ
+- Skript přijímá tabulku ve formátu `.xlsx` generovanou stagem. 
+- ! Tabulka musí obsahovat sloupce pojmenované `nabizetVAplikaciIIA` s možnostmi ["ANO","NE"],
+`ciziSkolaNazev`,`ciziSkolaZkratka` ,`ciziSkolaMesto`,`ciziSkolaStatNazev`, `ciziUrl`, `domaciPracoviste`, `KodyISCEDVEWPSpecifSmlouvy`
+
+1. Vložte soubor do stejného adresáře jako loader.py a visualizer.py a přejmenujte ho na `.....` .
+2. Spusťe skript `loader.py` a vyčkejte (generování souřadnic chvíli trvá).
+3. Po úspěšném dokončení zadejte do terminálu příkaz `streamlit run visualizer.py`
+4. Hotovo.
+
+
+
+--- 
+
+
+
+
+
+
 # Erasmus-visualization: Streamlit varianta
 Vizualizace možných zájezdů na Erasmus skrze streamlit. Pretty self-explanatory.
 Akutální web verze (NEREFLEKTUJE AKTUALIZACE): erasmus-proto.streamlit.app
@@ -31,3 +50,23 @@ Admin tools jsou zavřený za dvěma vrstvama bezpečnosti:
     - Whitelist není trackován gitem, inicializován při prvním loginu do admin tools (tento uživatel je přidán, zbytek se musí přidat nebo odebrat)
     - Whitelist je txt soubor, silně neideální
     - Bypass: Jít na localhost:500/admin&stagUserName={validní uživatelský jméno zašifrováno do base64}
+
+
+
+### FINÁLNÍ ÚKOLY PRO ODEVZDÁNÍ
+- **Vstupní data**: `Aplikace_IIA_zdroj_vzor.xlsx` ... tabulka vygenerovaná stagem 2x ročně; přidán sloupec *Nabízet v aplikaci k IIA* – `nabizetVAplikaciIIA` s možnostmi ["ANO","NE"] (momentálně default `ANO`)
+- **Sloupce na frontendu**: 
+    - Název zahraniční školy – `ciziSkolaNazev`
+    - Erasmus kód zahraniční školy  – `ciziSkolaZkratka` 
+    - město zahraniční školy – `ciziSkolaMesto`
+    - země zahraniční školy – `ciziSkolaStatNazev`
+    - webová adresa zahraniční školy – `ciziUrl`
+    - domácí pracoviště (fakulta, katedra) – `domaciPracoviste`
+    - kódy oborů - resp. názvy – `KodyISCEDVEWPSpecifSmlouvy`
+
+- **PROBLÉMY**
+    - **JEDNA UNIVERZITA JE V NĚKOLIKA ŘÁDCÍCH, V NĚKTERÝCH URL ATD. JE, JINDE NE, NĚKDE JEDEN KÓD OBORU, JINDE VÍCE ODDĚLENÝCH ČÁRKOU, NĚKDE DOMÁCÍ PRACOVIŠTĚ VE FORMÁTU XX/XXX, NĚKDE XX, NĚKDE JEDNO NĚKDE VÍCE STRAŠNÉ NA ZPRACOVÁNÍ**
+
+
+
+

@@ -2,119 +2,309 @@ import streamlit as st
 import polars as pl
 import folium as fo
 from streamlit_folium import st_folium
-from typing import Dict, List
+import re
+import pandas as pd
+import base64
+from st_aggrid import AgGrid, GridOptionsBuilder  
+
+# --- Stránka ---
+st.set_page_config(page_title="UJEP Erasmus+", page_icon="🌍", layout="wide")
+
+def load_image_base64(path):
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
+erasmus_logo = load_image_base64("erasmus_logo.png")
+ujep_logo = load_image_base64("UJEP_Logo.svg.png")
+
+# --- Styl ---
+st.markdown(f"""
+<style>
+.stApp {{
+    background-color: #f8f9fb;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+}}
+
+.header-container {{
+    background: linear-gradient(135deg, #d9ecff 0%, #9ec8f2 100%);
+    color: #002b50;
+    text-align: center;
+    padding: 3rem 1rem 2.5rem 1rem;
+    border-radius: 0 0 18px 18px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    margin-bottom: 1.5rem;
+    position: relative;
+}}
+
+.main-title {{
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: #002b50;
+    margin-bottom: 0.4rem;
+}}
+
+.subtitle {{
+    font-size: 1.15rem;
+    font-weight: 300;
+    color: #1d4066;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.2px;
+    margin-bottom: 0.8rem;
+}}
+
+.accent-line {{
+    width: 80px;
+    height: 3px;
+    background: linear-gradient(90deg, #004a98, #00a0e3);
+    border-radius: 3px;
+    margin: 0 auto;
+}}
+
+.logos {{
+    position: absolute;
+    top: 15px;
+    right: 25px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}}
+.logos img {{
+    height: 48px;
+    opacity: 0.95;
+}}
+
+.info-box {{
+    background-color: #ffffff;
+    border-left: 5px solid #0072ce;
+    padding: 1.2rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+}}
+.info-box p {{
+    margin: 0;
+    font-size: 0.95rem;
+    color: #333;
+    line-height: 1.5;
+}}
+.info-box a {{
+    color: #0072ce;
+    text-decoration: none;
+    font-weight: 500;
+}}
+.info-box a:hover {{
+    text-decoration: underline;
+}}
+
+table.dataframe {{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+}}
+table.dataframe th, table.dataframe td {{
+    border: 1px solid #ddd;
+    padding: 8px;
+    vertical-align: top;
+    white-space: normal !important;
+    word-wrap: break-word;
+    max-width: 300px;
+}}
+table.dataframe th {{
+    background-color: #efefef;
+    font-weight: 600;
+}}
+
+iframe[title="st_folium"] {{
+    height: 550px !important;
+    margin-bottom: 0 !important;
+}}
+</style>
+""", unsafe_allow_html=True)
+
+# --- Hlavička ---
+st.markdown(f"""
+<div class="header-container">
+    <div class="logos">
+        <img src="data:image/png;base64,{erasmus_logo}" alt="Erasmus+">
+        <img src="data:image/png;base64,{ujep_logo}" alt="UJEP">
+    </div>
+    <div class="main-title">UJEP Erasmus+</div>
+    <div class="subtitle">Objev partnerské univerzity po celé Evropě – podle fakulty, oboru a země</div>
+    <div class="accent-line"></div>
+</div>
+""", unsafe_allow_html=True)
+
+# --- Úvodní info box ---
+st.markdown("""
+<div class="info-box">
+<p>
+<b>Erasmus+</b> je vzdělávací program Evropské unie, který podporuje spolupráci a mobilitu ve všech sférách vzdělávání, 
+v odborné přípravě a v oblasti sportu a mládeže. Je nástupcem Programu celoživotního učení, programu Mládež v akci a dalších. 
+Program Erasmus vznikl v roce 1987, v České republice funguje od roku 1998. 
+<b>Univerzita Jana Evangelisty Purkyně v Ústí nad Labem</b> je do programu zapojena od roku 1999.
+</p>
+<p style="margin-top:8px;">
+🔗 <a href="https://www.ujep.cz/cs/zakladni-informace" target="_blank">Základní informace o programu Erasmus+ na webu UJEP</a>
+</p>
+</div>
+""", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 
-st.set_page_config(layout="wide")
+# --- Načtení dat ---
+@st.cache_data
+def load_data():
+    df = pl.read_excel("new.xlsx")
+    df = df.with_columns([
+        pl.col("Latitude").cast(pl.Float64, strict=False),
+        pl.col("Longtitude").cast(pl.Float64, strict=False)
+    ])
+    df = df.with_columns([
+        pl.when((pl.col("Latitude") < 33) | (pl.col("Latitude") > 75) |
+                (pl.col("Longtitude") < -31) | (pl.col("Longtitude") > 65))
+          .then(None).otherwise(pl.col("Latitude")).alias("Latitude"),
+        pl.when((pl.col("Latitude") < 33) | (pl.col("Latitude") > 75) |
+                (pl.col("Longtitude") < -31) | (pl.col("Longtitude") > 65))
+          .then(None).otherwise(pl.col("Longtitude")).alias("Longtitude")
+    ])
+    return df
 
-schools_source = pl.read_excel("schools.xlsx")
-filter_targets = ["Univerzita", "Obory", "Stát"] # Mělo by reflektovat všechny potenciální filtrované sloupečky
+df = load_data()
 
-#TODO: Obecně hodně těhle deklarací je sketch. Trochu se na to kouknout a optimalizovat.
-schools:pl.DataFrame = schools_source.select(filter_targets) # Schools je subtabulka sloužící k filtrování a jiným sussy operacím. Asi tady deklarována zbytečně vysoko.
-picks:Dict[str, pl.Series] = schools.to_dict() # Dictionary s filtrovacími klíčovými slovíčky pro každý sloupeček
-for column in picks.keys():
-    picks[column] = ["---"]  + picks[column].unique().sort(nulls_last=True).to_list()
+def unique_values(series: pl.Series, delimiter: str):
+    vals = set()
+    for cell in series.drop_nulls():
+        for item in re.split(fr"\s*{re.escape(delimiter)}\s*", str(cell)):
+            item = item.strip()
+            if item:
+                vals.add(item)
+    return sorted(vals)
 
-def filter_schools(school_df:pl.DataFrame) -> pl.DataFrame:
-    """Funkce na profiltrování škol dle více podmínek."""
-    filtered = school_df
-    filter_choice = []
+# --- Filtry ---
+fakulty = unique_values(df["Domácí pracoviště (fakulta, katedra)"], ",")
+obory = unique_values(df["Obory"], ";")
+zeme = unique_values(df["Stát zahraniční školy"], ",")
 
-    for column in filtered.columns:
-        if column not in st.session_state: # Teoreticky by se nemělo stát (st.multiselect inicializuje ten column jako prázdný seznam, takže bude v session state)
-            continue
+st.markdown("### <span style='color:#004A98;'>Filtrování</span>", unsafe_allow_html=True)
+col1, col2, col3 = st.columns(3)
+with col1:
+    vybrane_fakulty = st.multiselect("Domácí pracoviště (fakulta, katedra)", fakulty)
+with col2:
+    vybrane_obory = st.multiselect("Obory", obory)
+with col3:
+    vybrane_zeme = st.multiselect("Stát zahraniční školy", zeme)
 
-        if len(st.session_state[column]) > 0:
-            filter_choice.append(pl.col(column).is_in(st.session_state[column])) 
-        
-    if len(filter_choice) < 1: # Pokud nejsou žádný podmínky, dej filtru vždycky pravdivou podmínku
-        filter_choice = [True]
-    print(filter_choice)
+# --- Filtrace ---
+df_filtered = df
+if vybrane_fakulty:
+    df_filtered = df_filtered.filter(
+        pl.col("Domácí pracoviště (fakulta, katedra)").map_elements(
+            lambda x: any(f.lower().strip() in [p.lower().strip() for p in re.split(r",\s*", str(x))] for f in vybrane_fakulty)
+        )
+    )
+if vybrane_obory:
+    df_filtered = df_filtered.filter(
+        pl.col("Obory").map_elements(
+            lambda x: any(o.lower().strip() in [p.lower().strip() for p in re.split(r";\s*", str(x))] for o in vybrane_obory)
+        )
+    )
+if vybrane_zeme:
+    df_filtered = df_filtered.filter(pl.col("Stát zahraniční školy").is_in(vybrane_zeme))
 
-    return filtered.filter(filter_choice)
+st.markdown("</div>", unsafe_allow_html=True)
 
-st.header("ERASMUS PřF UJEP")
-st.divider()
+# --- Mapa ---
+st.markdown("### <span style='color:#004A98;'>Mapa partnerských univerzit</span>", unsafe_allow_html=True)
 
-# --- TABULKA ---
+europe = fo.Map(location=[50.5, 14.25], zoom_start=4, max_bounds=True)
 
-# Filtrování
-filters = st.columns(len(filter_targets)) # Názvy filtrovaných sloupců
-for index, column in enumerate(filter_targets):
-    with filters[index]:
-        st.session_state[column] = st.multiselect(label=column, options=picks[column]) # Samotné filtry, NOTE: This is kinda stupid?
-
-schools = filter_schools(schools_source)
-schools_sub = schools.select("Univerzita", "Obory","Stát","URL")
-
-# --- MAPA --- TODO: Mapa pod tabulkou je hodně špatnej design. Pokud ta tabulka bude moc velká, bude to chtít hodně scrollování před nalezením mapy. Posunout mapu nahoru, nebo aspoň vedle tabulky.
-# Hranice mapy
-max_lat, min_lat = 75, 33
-max_long, min_long = 65, -31
-
-# Inicializace mapy
-europe = fo.Map(
-    [50.5, 14.25],
-    zoom_start=4, # Počáteční krok přiblížení, čím menší tím oddálenější
-    max_bounds=True, # Omezení tahání vedle
-    min_lat=min_lat,
-    max_lat=max_lat,
-    min_lon=min_long,
-    max_lon=max_long
+df_with_coords = df_filtered.filter(
+    (pl.col("Latitude").is_not_null()) & (pl.col("Longtitude").is_not_null())
 )
 
-# Barvy pro jednotlivé katedry
-category_colors = {
-    "Turecká republika":"purple",
-    "Švédské království":"lightblue",
-    "Španělské království":"lightgreen",
-    "Srbská republika":"purple",
-    "Spolková republika Německo":"pink",
-    "Slovinská republika":"lightgreen",
-    "Slovenská republika":"pink",
-    "Řecká republika":"purple",
-    "Rumunsko":"purple",
-    "Portugalská republika":"lightgreen",
-    "Polská republika":"pink",
-    "Maďarsko":"pink",
-    "Lotyšská republika":"lightblue",
-    "Litevská republika":"lightblue",
-    "Italská republika":"lightgreen",
-    "Chorvatská republika":"lightgreen",
-    "Francouzská republika":"lightgreen",
-    "Estonská republika":"lightblue",
-    "Bulharská republika":"purple"
-}
+for row in df_with_coords.iter_rows(named=True):
+    name = row["Název zahraniční školy"]
+    city = row["Město zahraniční školy"]
+    country = row["Stát zahraniční školy"]
+    url = row.get("Webová adresa zahraniční školy", "")
+    lat, lon = row["Latitude"], row["Longtitude"]
 
-schools = schools.filter([pl.col("Longitude").is_not_null(), pl.col("Latitude").is_not_null()])
-
-# Vytvoření Markerů na mapě
-# Extrahování koordinací z dataframeu #TODO: Tohle je extrémně špatný přístup. Holy fuck.
-coords = zip(
-    schools.to_series(schools.get_column_index("Univerzita")).to_list(),
-    schools.to_series(schools.get_column_index("Latitude")).to_list(),
-    schools.to_series(schools.get_column_index("Longitude")).to_list(),
-    schools.to_series(schools.get_column_index("Stát")).to_list(),
-    schools.to_series(schools.get_column_index("URL")).to_list()
-)
-
-# Iterace a zapsání do mapy
-for coord in coords:
-    stát = coord[3]
-    color = category_colors.get(stát, "blue")
-    
-    # Vytvoření popisu s názvem univerzity a URL
-    popup_content = f"<strong>{coord[0]}</strong><br><a href='{coord[4]}' target='_blank'>{coord[4]}</a>"
-    
+    popup_html = f"""
+    <div style='font-family: Inter, sans-serif; width: 220px;'>
+        <strong style='font-size:16px;'>{name}</strong><br>
+        <span style='color:#666;'>{city}, {country}</span><br><br>
+        <a href='{url}' target='_blank' style='color:#0072ce; text-decoration:none;'>🌐 Otevřít web</a>
+    </div>
+    """
     fo.Marker(
-        location=[coord[1], coord[2]],
-        popup=fo.Popup(popup_content),
-        icon=fo.Icon(color=color, icon="graduation-cap", prefix="fa")
+        location=[lat, lon],
+        popup=fo.Popup(popup_html, max_width=250),
+        icon=fo.Icon(color="cadetblue", icon="university", prefix="fa")
     ).add_to(europe)
 
-# Spuštění 
-st_folium(europe, use_container_width=True)
+st_folium(europe, use_container_width=True, height=550)
 
-#st.session_state
-st.dataframe(schools_sub, use_container_width=True)
+st.caption(
+
+    "ℹ*Některé partnerské univerzity se nemusí zobrazit na mapě z důvodu chybějících souřadnic. "
+    "V tabulce níže jsou však uvedeny všechny dostupné instituce.*"
+)
+
+from st_aggrid import AgGrid, GridOptionsBuilder
+
+
+# --- Tabulka ---
+
+st.markdown("### <span style='color:#004A98;'>Seznam univerzit</span>", unsafe_allow_html=True)
+cols_to_show = [c for c in df_filtered.columns if c not in ("Latitude", "Longtitude")]
+st.write(f"Zobrazeno univerzit: **{len(df_filtered)}** (z {len(df)} celkem)")
+
+# Převod na pandas
+df_pd = df_filtered.select(cols_to_show).to_pandas()
+
+# 🟢 Jednoduché vyhledávací pole
+search_text = st.text_input("Vyhledat univerzitu nebo stát:", placeholder="Začni psát název nebo zemi...")
+
+
+st.markdown("""
+<style>
+input[type="text"] {
+    border-radius: 8px;
+    border: 1px solid #cbd5e1 !important;
+    padding: 8px 10px !important;
+    background-color: #f8fafc !important;
+    font-size: 15px !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+if search_text:
+    df_pd = df_pd[df_pd.apply(lambda row: row.astype(str).str.lower().str.contains(search_text).any(), axis=1)]
+
+# 🧩 Jednoduchá konfigurace tabulky
+gb = GridOptionsBuilder.from_dataframe(df_pd)
+gb.configure_default_column(
+    wrapText=True,
+    autoHeight=True,
+    resizable=True,
+    sortable=True,   # ✅ jen řazení
+    filter=False     # ❌ žádné složité filtry
+)
+gb.configure_grid_options(domLayout='normal')
+grid_options = gb.build()
+
+AgGrid(
+    df_pd,
+    gridOptions=grid_options,
+    theme="balham",
+    height=500,
+    allow_unsafe_jscode=True
+)
+
+st.markdown("""
+<hr>
+<p style='text-align:center; color:#888; font-size:14px;'>
+© 2025 Univerzita J. E. Purkyně – Erasmus+ | Vyvinuto v rámci interního projektu Katedry informatiky UJEP
+</p>
+""", unsafe_allow_html=True)
