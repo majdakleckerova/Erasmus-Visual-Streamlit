@@ -3,12 +3,16 @@
 - ! Tabulka musí obsahovat sloupce pojmenované `nabizetVAplikaciIIA` s možnostmi ["ANO","NE"],
 `ciziSkolaNazev`,`ciziSkolaZkratka` ,`ciziSkolaMesto`,`ciziSkolaStatNazev`, `ciziUrl`, `domaciPracoviste`, `KodyISCEDVEWPSpecifSmlouvy`
 
-1. Vložte soubor do stejného adresáře jako loader.py a visualizer.py a přejmenujte ho na `.....` .
+1. Vložte soubor do stejného adresáře jako loader.py a visualizer.py a přejmenujte ho na `Aplikace_IIA_zdroj_vzor` .
 2. Spusťe skript `loader.py` a vyčkejte (generování souřadnic chvíli trvá).
 3. Po úspěšném dokončení zadejte do terminálu příkaz `streamlit run visualizer.py`
 4. Hotovo.
 
-
+---
+# Poznámky
+- get_coords() není schopná vygenerovat **úplně všechny souřadnice** (buď chybějící doplnit vždy manuálně nebo to zas tak nevadí ;))
+- dát či nedat pryč koncovky oborů ? (to obory d.n.; obory j.n.)
+- fakulta a katedra řešená sloupcem `domácí pracoviště`. idk asi by s tim něco udělat šlo...
 
 --- 
 

@@ -7,7 +7,7 @@ import pandas as pd
 import base64
 from st_aggrid import AgGrid, GridOptionsBuilder  
 
-# --- Stránka ---
+### Nastavení stránky
 st.set_page_config(page_title="UJEP Erasmus+", page_icon="🌍", layout="wide")
 
 def load_image_base64(path):
@@ -17,7 +17,7 @@ def load_image_base64(path):
 erasmus_logo = load_image_base64("erasmus_logo.png")
 ujep_logo = load_image_base64("UJEP_Logo.svg.png")
 
-# --- Styl ---
+### Vlastní CSS styly
 st.markdown(f"""
 <style>
 .stApp {{
@@ -121,7 +121,7 @@ iframe[title="st_folium"] {{
 </style>
 """, unsafe_allow_html=True)
 
-# --- Hlavička ---
+### Hlavička
 st.markdown(f"""
 <div class="header-container">
     <div class="logos">
@@ -134,7 +134,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# --- Úvodní info box ---
+### Informační box
 st.markdown("""
 <div class="info-box">
 <p>
@@ -151,7 +151,7 @@ Program Erasmus vznikl v roce 1987, v České republice funguje od roku 1998.
 st.markdown("</div>", unsafe_allow_html=True)
 
 
-# --- Načtení dat ---
+### Načtení dat
 @st.cache_data
 def load_data():
     df = pl.read_excel("new.xlsx")
@@ -180,7 +180,12 @@ def unique_values(series: pl.Series, delimiter: str):
                 vals.add(item)
     return sorted(vals)
 
-# --- Filtry ---
+
+
+
+
+
+### Filtry
 fakulty = unique_values(df["Domácí pracoviště (fakulta, katedra)"], ",")
 obory = unique_values(df["Obory"], ";")
 zeme = unique_values(df["Stát zahraniční školy"], ",")
@@ -194,7 +199,7 @@ with col2:
 with col3:
     vybrane_zeme = st.multiselect("Stát zahraniční školy", zeme)
 
-# --- Filtrace ---
+### Filtrování dat
 df_filtered = df
 if vybrane_fakulty:
     df_filtered = df_filtered.filter(
@@ -213,7 +218,13 @@ if vybrane_zeme:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Mapa ---
+
+
+
+
+
+
+### Mapa
 st.markdown("### <span style='color:#004A98;'>Mapa partnerských univerzit</span>", unsafe_allow_html=True)
 
 europe = fo.Map(location=[50.5, 14.25], zoom_start=4, max_bounds=True)
@@ -250,19 +261,15 @@ st.caption(
     "V tabulce níže jsou však uvedeny všechny dostupné instituce.*"
 )
 
-from st_aggrid import AgGrid, GridOptionsBuilder
 
 
-# --- Tabulka ---
+
+### Tabulka
 
 st.markdown("### <span style='color:#004A98;'>Seznam univerzit</span>", unsafe_allow_html=True)
 cols_to_show = [c for c in df_filtered.columns if c not in ("Latitude", "Longtitude")]
 st.write(f"Zobrazeno univerzit: **{len(df_filtered)}** (z {len(df)} celkem)")
-
-# Převod na pandas
 df_pd = df_filtered.select(cols_to_show).to_pandas()
-
-# 🟢 Jednoduché vyhledávací pole
 search_text = st.text_input("Vyhledat univerzitu nebo stát:", placeholder="Začni psát název nebo zemi...")
 
 
@@ -282,14 +289,13 @@ input[type="text"] {
 if search_text:
     df_pd = df_pd[df_pd.apply(lambda row: row.astype(str).str.lower().str.contains(search_text).any(), axis=1)]
 
-# 🧩 Jednoduchá konfigurace tabulky
 gb = GridOptionsBuilder.from_dataframe(df_pd)
 gb.configure_default_column(
     wrapText=True,
     autoHeight=True,
     resizable=True,
-    sortable=True,   # ✅ jen řazení
-    filter=False     # ❌ žádné složité filtry
+    sortable=True,   
+    filter=False     
 )
 gb.configure_grid_options(domLayout='normal')
 grid_options = gb.build()
